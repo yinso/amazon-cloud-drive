@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
-var AuthClient = require('../lib/index');
+var CloudDrive = require('../lib/index');
 var getenv = require('getenv');
+var config = require('config')
 var args = {
   username: getenv.string('USERNAME'),
   clientID: getenv.string('CLIENT_ID'),
   clientSecret: getenv.string('CLIENT_SECRET')
 };
 
-var auth = new AuthClient(args);
+var client = new CloudDrive(args);
 
-auth.authenticate(function (err, res) {
+client.authenticate(function (err, res) {
   console.log('cloud.drive.auth.result:', err, res);
 });

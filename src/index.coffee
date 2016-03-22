@@ -37,7 +37,18 @@ class CloudDrive extends EventEmitter
         enumerable: false
   authenticate: (cb) ->
     self = @
-    callbackUri = url.parse @callbackUrl
+    self.redirect (err, res) ->
+      if err
+        cb err
+      else
+        self.getOAuthToken res, (err, result) ->
+          if err
+            cb err
+          else
+            cb null, result
+  redirect: (cb) ->
+    self = @
+    callbackUri = url.parse self.callbackUrl
     app.get callbackUri.pathname, (req, res, next) ->
       if req.query.error # this errors.
         console.error 'aws.cloud-drive-callback:error', req.query
@@ -45,13 +56,11 @@ class CloudDrive extends EventEmitter
         cb req.query
       else
         console.log 'aws.cloud-drive-callback', req.query
-        res.json req.query
-        self.getOAuthToken req.query, (err, result) ->
-          if err
-            cb err
-          else
-            cb null, result
-
+        self.once 'authenticated', (result) ->
+          res.json result
+        self.once 'error', (err) ->
+          res.status(400).json(err)
+        cb null, req.query
     app.listen callbackUri.port
     amazonOAUri = url.parse "https://www.amazon.com/ap/oa"
     amazonOAUri.query =
@@ -114,15 +123,18 @@ class CloudDrive extends EventEmitter
     request options, (err, res, body) ->
       if err
         console.log('AuthClient.getOAuthToken:ERROR', err)
+        self.emit 'error', err
         cb err
       else if res.statusCode >= 400
         console.log('AuthClient.getOAuthToken:HTTP_ERROR', res.statusCode, res.body)
+        self.emit 'error', body
         cb res.body
       else
         body.code = code
         self.code = code
         self.accessToken = body.access_token
         self.refreshToken = body.refresh_token
+        self.emit 'authenticated', body
         self.authRefresh body.expires_in
         cb null, body
 
