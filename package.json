@@ -1,0 +1,38 @@
+{
+  "name": "amazon-cloud-drive",
+  "version": "0.1.0",
+  "description": "An Amazon Cloud Drive Node library (for until Amazon provides its own)",
+  "main": "lib/",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --recursive"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yinso/amazon-cloud-drive.git"
+  },
+  "keywords": [
+    "amazon",
+    "cloud",
+    "drive",
+    "cloud"
+  ],
+  "author": "Yinso Chen <yinso.chen@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yinso/amazon-cloud-drive/issues"
+  },
+  "homepage": "https://github.com/yinso/amazon-cloud-drive#readme",
+  "dependencies": {
+    "config": "^1.19.0",
+    "express": "^4.13.4",
+    "getenv": "^0.6.0",
+    "js-yaml": "^3.5.5",
+    "opener": "^1.4.1",
+    "request": "^2.69.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "coffee-script": "^1.10.0",
+    "mocha": "^2.4.5"
+  }
+}
