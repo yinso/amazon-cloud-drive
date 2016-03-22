@@ -4,8 +4,9 @@ url = require 'url'
 opener = require 'opener'
 { EventEmitter } = require 'events'
 request = require 'request'
+debug = require('debug')('clouddrive')
 
-class CloudDrive
+class CloudDrive extends EventEmitter
   constructor: (options) ->
     if not (@ instanceof CloudDrive)
       return new CloudDrive options
@@ -54,21 +55,48 @@ class CloudDrive
     app.listen callbackUri.port
     amazonOAUri = url.parse "https://www.amazon.com/ap/oa"
     amazonOAUri.query =
-      clien_id: @clientID
+      client_id: @clientID
       scope: @scopes.join(' ')
       response_type: 'code'
       redirect_uri: @callbackUrl
+    console.log('amazon-oa.uri', amazonOAUri)
     opener url.format(amazonOAUri)
   authRefresh: (expiresSeconds) ->
     self = @
     if self.refreshID
       clearTimeout self.refreshID
-    self.refreshID = setTimeout () ->
-      self.getOAuthToken { code: self.code }, (err, res) ->
+    timeoutCallback = () ->
+      self.refreshOAuthToken (err, res) ->
         if err
           self.emit('error', err)
         else
           self.emit('authenticated', res)
+    self.refreshID = setTimeout timeoutCallback, (expiresSeconds - 1) * 1000
+  refreshOAuthToken: (cb) ->
+    self = @
+    oAuthUrl = 'https://api.amazon.com/auth/o2/token'
+    options =
+      method: 'POST'
+      url: oAuthUrl
+      form:
+        grant_type: 'refresh_token'
+        refresh_token: self.refreshToken
+        client_id: self.clientID
+        client_secret: self.clientSecret
+      json: true
+    console.log('AuthClient.refreshToken', options)
+    request options, (err, res, body) ->
+      if err
+        console.log('AuthClient.refreshToken:ERROR', err)
+        cb err
+      else if res.statusCode >= 400
+        console.log('AuthClient.refreshToken:HTTP_ERROR', res.statusCode, res.body)
+        cb res.body
+      else
+        self.accessToken = body.access_token
+        self.refreshToken = body.refresh_token
+        self.authRefresh body.expires_in
+        cb null, body
   getOAuthToken: ({ code }, cb) ->
     self = @
     oAuthUrl = 'https://api.amazon.com/auth/o2/token'
@@ -78,21 +106,24 @@ class CloudDrive
       form:
         grant_type: 'authorization_code'
         code: code
-        client_id: @clientID
-        client_secret: @clientSecret
-        redirect_uri: @callbackUri
+        client_id: self.clientID
+        client_secret: self.clientSecret
+        redirect_uri: self.callbackUrl
       json: true
+    console.log('AuthClient.getOAuthToken', options)
     request options, (err, res, body) ->
       if err
+        console.log('AuthClient.getOAuthToken:ERROR', err)
         cb err
       else if res.statusCode >= 400
+        console.log('AuthClient.getOAuthToken:HTTP_ERROR', res.statusCode, res.body)
         cb res.body
       else
-        result.code = code
+        body.code = code
         self.code = code
-        self.accessToken = result.access_token
-        self.refreshToken = result.refresh_token
-        self.authRefresh result.expires_in
+        self.accessToken = body.access_token
+        self.refreshToken = body.refresh_token
+        self.authRefresh body.expires_in
         cb null, body
 
 module.exports = CloudDrive

@@ -10,6 +10,6 @@ var args = {
 
 var auth = new AuthClient(args);
 
-auth.authenticate(args, function (err, res) {
+auth.authenticate(function (err, res) {
   console.log('cloud.drive.auth.result:', err, res);
 });

@@ -24,6 +24,7 @@
   "homepage": "https://github.com/yinso/amazon-cloud-drive#readme",
   "dependencies": {
     "config": "^1.19.0",
+    "debug": "^2.2.0",
     "express": "^4.13.4",
     "getenv": "^0.6.0",
     "js-yaml": "^3.5.5",
